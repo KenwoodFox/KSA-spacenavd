@@ -1,6 +1,7 @@
 ﻿using Brutal.ImGuiApi;
 using KSA;
 using StarMap.API;
+using StarMap.SimpleMod.Dependency;
 
 namespace StarMap.SimpleExampleMod
 {
@@ -63,19 +64,24 @@ namespace StarMap.SimpleExampleMod
             ImGui.End();
         }
 
+        [StarMapBeforeMain]
+        public void OnBeforeMain()
+        {
+            Console.WriteLine($"SimpleMod - On before main loaded");
+        }
+
         [StarMapImmediateLoad]
         public void OnImmediateLoad(Mod mod)
         {
-            Console.WriteLine("SimpleMod - On immediate loaded");
-
+            Console.WriteLine($"SimpleMod - On immediate loaded, modname: {mod.Name}");
         }
 
         [StarMapAllModsLoaded]
         public void OnFullyLoaded()
         {
+            var @object = new DependencyClass();
             Console.WriteLine("SimpleMod - On fully loaded");
             Patcher.Patch();
-
         }
 
         [StarMapUnload]

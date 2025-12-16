@@ -2,24 +2,16 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <RootNamespace>StarMap.SimpleMod</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	  
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lib.Harmony" Version="2.4.1" />
+    <PackageReference Include="StarMap.API" Version="0.3.4" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\StarMap.SimpleMod2\StarMap.SimpleMod2.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="mod.toml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <ProjectReference Include="..\StarMap.SimpleMod.Dependency\StarMap.SimpleMod.Dependency.csproj" />
   </ItemGroup>
 
 	<ItemGroup>
@@ -40,12 +32,10 @@
 		</Reference>
 	</ItemGroup>
 
-	<ItemGroup Condition="'$(Configuration)' == 'Debug'">
-		<Reference Include="..\..\Import\StarMap.API.dll">
-			<ExcludeAssets>runtime</ExcludeAssets>
-		</Reference>
+	<ItemGroup>
+	  <None Update="mod.toml">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
 	</ItemGroup>
-	
-	
 
 </Project>

@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using KSA;
+using StarMap.SimpleMod.Dependency;
 
 namespace StarMap.SimpleExampleMod
 {
@@ -20,11 +21,12 @@ namespace StarMap.SimpleExampleMod
             _harmony = null;
         }
 
-        [HarmonyPatch(typeof(ModLibrary), nameof(ModLibrary.LoadAll))]
-        [HarmonyPostfix]
-        public static void AfterLoad()
+        [HarmonyPatch(typeof(DependencyClass), nameof(DependencyClass.DoSomething))]
+        [HarmonyPrefix]
+        public static bool AfterLoad(ref string __result)
         {
-            Console.WriteLine("ModLibrary.LoadAll patched by SimpleMod.");
+            __result = "My custom string";
+            return false; // Skip original method entirely
         }
     }
 }
