@@ -10,6 +10,7 @@
 
   <PropertyGroup>
     <KsaDll Condition="'$(KsaDll)' == ''">/opt/kittenspaceagency/KSA.dll</KsaDll>
+    <KsaDir>$([System.IO.Path]::GetDirectoryName($(KsaDll)))</KsaDir>
     <StarMapVersion>0.4.7</StarMapVersion>
     <StarMapApiDll>$(MSBuildThisFileDirectory)deps/StarMap.API.dll</StarMapApiDll>
   </PropertyGroup>
@@ -27,6 +28,15 @@
       <Private>false</Private>
     </Reference>
     <Reference Include="$(StarMapApiDll)">
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="$(KsaDir)/Brutal.ImGui.dll">
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="$(KsaDir)/Brutal.Core.Strings.dll">
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="$(KsaDir)/Brutal.Core.Numerics.dll">
       <Private>false</Private>
     </Reference>
   </ItemGroup>

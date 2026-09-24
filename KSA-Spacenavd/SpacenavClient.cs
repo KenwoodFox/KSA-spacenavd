@@ -8,9 +8,27 @@ internal sealed class SpacenavClient
     private const string SocketPath = "/var/run/spnav.sock";
     private const int EventSize = 32;
 
+    private readonly object _gate = new();
     private readonly Thread _thread;
     private volatile bool _running;
     private Socket? _socket;
+    private DebugState _state = new("starting", 0, 0, 0, 0, 0, 0, "none");
+
+    public readonly record struct DebugState(
+        string Status,
+        int Tx,
+        int Ty,
+        int Tz,
+        int Rx,
+        int Ry,
+        int Rz,
+        string Button);
+
+    public DebugState Snapshot()
+    {
+        lock (_gate)
+            return _state;
+    }
 
     public SpacenavClient()
     {
@@ -51,6 +69,7 @@ internal sealed class SpacenavClient
             using var sock = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
             _socket = sock;
             sock.Connect(new UnixDomainSocketEndPoint(SocketPath));
+            SetStatus($"connected to {SocketPath}");
             Console.WriteLine($"KSA-Spacenavd: connected to {SocketPath}");
 
             var buf = new byte[EventSize];
@@ -62,6 +81,7 @@ internal sealed class SpacenavClient
                     int read = sock.Receive(buf, n, EventSize - n, SocketFlags.None);
                     if (read == 0)
                     {
+                        SetStatus("socket closed");
                         Console.WriteLine("KSA-Spacenavd: socket closed");
                         return;
                     }
@@ -70,25 +90,45 @@ internal sealed class SpacenavClient
                 }
 
                 var ev = MemoryMarshal.Cast<byte, int>(buf);
-                if (ev[0] == 0)
+                lock (_gate)
                 {
-                    Console.WriteLine(
-                        $"KSA-Spacenavd: motion T=({ev[1]}, {ev[2]}, {ev[3]}) R=({ev[4]}, {ev[5]}, {ev[6]})");
-                }
-                else
-                {
-                    Console.WriteLine(
-                        $"KSA-Spacenavd: button {ev[1]} {(ev[0] == 1 ? "pressed" : "released")}");
+                    if (ev[0] == 0)
+                    {
+                        _state = _state with
+                        {
+                            Tx = ev[1],
+                            Ty = ev[2],
+                            Tz = ev[3],
+                            Rx = ev[4],
+                            Ry = ev[5],
+                            Rz = ev[6],
+                        };
+                    }
+                    else
+                    {
+                        _state = _state with
+                        {
+                            Button = $"{ev[1]} {(ev[0] == 1 ? "pressed" : "released")}",
+                        };
+                    }
                 }
             }
         }
         catch (Exception ex) when (!_running)
         {
+            SetStatus($"stopped ({ex.GetType().Name})");
             Console.WriteLine($"KSA-Spacenavd: stopped ({ex.GetType().Name})");
         }
         catch (Exception ex)
         {
+            SetStatus(ex.Message);
             Console.WriteLine($"KSA-Spacenavd: {ex.Message}");
         }
+    }
+
+    private void SetStatus(string status)
+    {
+        lock (_gate)
+            _state = _state with { Status = status };
     }
 }
