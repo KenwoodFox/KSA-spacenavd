@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>KSA.Spacenavd</RootNamespace>
+    <AssemblyName>KSA-Spacenavd</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <KsaDll Condition="'$(KsaDll)' == ''">/opt/kittenspaceagency/KSA.dll</KsaDll>
+    <StarMapVersion>0.4.7</StarMapVersion>
+    <StarMapApiDll>$(MSBuildThisFileDirectory)deps/StarMap.API.dll</StarMapApiDll>
+  </PropertyGroup>
+
+  <Target Name="FetchStarMapApi" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(KsaDll)')" Text="KSA.dll not found at $(KsaDll). Pass -p:KsaDll=/path/to/KSA.dll" />
+    <MakeDir Directories="$(MSBuildThisFileDirectory)deps" Condition="!Exists('$(StarMapApiDll)')" />
+    <Exec
+      Condition="!Exists('$(StarMapApiDll)')"
+      Command="curl -fsSL -o &quot;$(MSBuildThisFileDirectory)deps/StarMap.zip&quot; -L &quot;https://github.com/StarMapLoader/StarMap/releases/download/$(StarMapVersion)/StarMap-$(StarMapVersion).zip&quot; &amp;&amp; unzip -jo &quot;$(MSBuildThisFileDirectory)deps/StarMap.zip&quot; StarMap.API.dll -d &quot;$(MSBuildThisFileDirectory)deps&quot; &amp;&amp; rm -f &quot;$(MSBuildThisFileDirectory)deps/StarMap.zip&quot;" />
+  </Target>
+
+  <ItemGroup>
+    <Reference Include="$(KsaDll)">
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="$(StarMapApiDll)">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="mod.toml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

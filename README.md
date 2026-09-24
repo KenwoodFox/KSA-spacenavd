@@ -1,42 +1,33 @@
-# StarMap-ExampleMods
+# KSA-Spacenavd
 
-Example mods for the StarMap mod loader for KSA
+SpaceMouse input for Kitten Space Agency, read from spacenavd.
 
-## How to create mods
+## Build (Linux)
 
--   Create a new class library targeting .NET 9
--   Add `https://nuget.pkg.github.com/StarMapLoader/index.json` as a nuget source ([For Visual Studio](https://nuget.pkg.github.com/StarMapLoader/index.json))
--   Import [StarMap.API](https://github.com/StarMapLoader/StarMap/pkgs/nuget/StarMap.API)
--   Create a new class that implements IStarMapMod
--   Implement the methods from the interface
-    -   OnImmediatLoad is called immediatly when the mod is finished loading (before Mod.PrepareSystems)
-    -   OnFullyLoaded is called when all Mods are loaded (After ModLibrary.LoadAll)
-    -   ImmediateUnload boolean states if the unload method should be called immediatly after OnImmediatLoad
-    -   Unload is called or immedialty, or when the game unloads
+Requires the .NET 10 SDK, `curl`, and `unzip`. 
+I assume you have the KSA.dll at  `/opt/kittenspaceagency/KSA.dll` but if you dont, 
+use the override with `-p:KsaDll=/path/to/KSA.dll`.
 
-## How to publish and install mods
+I didn't want to grab the starmap API manually every time so if you dont have it, building should
+pull `StarMap.API.dll` into `KSA-Spacenavd/deps/`.
 
--   Provide a zip or folder that contains the the class library dll as well as any dependencies excluding:
-    -   Any part of KSA
-    -   Harmony
--   Provide a mod.toml in the folder that contains the name of the mod 'name = [mod name]` (known in KSA as mod id)
--   The mod id needs to match the name of the assembly that contains the IStarMapMod class
--   StarMap will search for mods that have a dll like this, and then loads the first class that implements IStarMapMod (if any)
--   StarMap mods still work as normal KSA mods (so any textures added to the same folder will work correctly)
--   Lastly the mod needs to be added to the manifest.toml in the content folder, the id needs to match the id set above
+```
+dotnet build -c Release
+```
+
+Output is `KSA-Spacenavd/bin/Release/net10.0/`. Copy `KSA-Spacenavd.dll`, `KSA-Spacenavd.deps.json`, and `mod.toml` into a mod folder under the KSA content directory, and enable it in `manifest.toml`:
 
 ```
 [[mods]]
-id = "[mod name]"
+id = "KSA-Spacenavd"
 enabled = true
 ```
 
--   When now loading the game via `StarMap.exe` or `StarMapLoader.exe`, the mod should be loaded and run
+## Oneliner
 
-## How to build simple example mod
+I don't neccicarily think you should do this but, i did copy/paste a big oneliner for
+everything. Just for testing.
 
--   Add a folder on the same level as the solution folder called "Import"
--   Add the KSA binaries there
--   (Also possible to alter this location in the .csproj)
--   Build the project, it should output the needed files
--   Copy over the mod.toml. SimpleMod.dll and SimpleMod.Deps.json to KSA, this should load
+```shell
+dotnet build -c Release && mkdir -p "$HOME/Documents/My Games/Kitten Space Agency/mods/KSA-Spacenavd" && cp KSA-Spacenavd/bin/Release/net10.0/{KSA-Spacenavd.dll,KSA-Spacenavd.deps.json,mod.toml} "$HOME/Documents/My Games/Kitten Space Agency/mods/KSA-Spacenavd/" && sed -i '/id = "KSA-Spacenavd"/q; $a [[mods]]\nid = "KSA-Spacenavd"\nenabled = true' "$HOME/Documents/My Games/Kitten Space Agency/manifest.toml"
+```

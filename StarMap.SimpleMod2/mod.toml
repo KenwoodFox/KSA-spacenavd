@@ -1,7 +1,0 @@
-name = "StarMap.SimpleMod2"
-
-[StarMap]
-EntryAssembly = "StarMap.SimpleMod2"
-ExportedAssemblies = [
-	"StarMap.SimpleMod.Dependency"
-]

@@ -1,0 +1,4 @@
+name = "KSA-Spacenavd"
+
+[StarMap]
+EntryAssembly = "KSA-Spacenavd"
