@@ -70,7 +70,6 @@ internal sealed class SpacenavClient
             _socket = sock;
             sock.Connect(new UnixDomainSocketEndPoint(SocketPath));
             SetStatus($"connected to {SocketPath}");
-            Console.WriteLine($"KSA-Spacenavd: connected to {SocketPath}");
 
             var buf = new byte[EventSize];
             while (_running)
@@ -82,7 +81,6 @@ internal sealed class SpacenavClient
                     if (read == 0)
                     {
                         SetStatus("socket closed");
-                        Console.WriteLine("KSA-Spacenavd: socket closed");
                         return;
                     }
 
@@ -117,12 +115,10 @@ internal sealed class SpacenavClient
         catch (Exception ex) when (!_running)
         {
             SetStatus($"stopped ({ex.GetType().Name})");
-            Console.WriteLine($"KSA-Spacenavd: stopped ({ex.GetType().Name})");
         }
         catch (Exception ex)
         {
             SetStatus(ex.Message);
-            Console.WriteLine($"KSA-Spacenavd: {ex.Message}");
         }
     }
 

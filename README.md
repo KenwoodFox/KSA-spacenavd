@@ -1,8 +1,8 @@
 # KSA-Spacenavd
 
-SpaceMouse input for Kitten Space Agency, read from spacenavd.
+[SpaceMouse](https://3dconnexion.com/us/spacemouse/) input for [Kitten Space Agency](https://ahwoo.com/app/100000/kitten-space-agency)
 
-## Build (Linux)
+## Build
 
 Requires the .NET 10 SDK, `curl`, and `unzip`. 
 I assume you have the KSA.dll at  `/opt/kittenspaceagency/KSA.dll` but if you dont, 
@@ -29,5 +29,5 @@ I don't neccicarily think you should do this but, i did copy/paste a big oneline
 everything. Just for testing.
 
 ```shell
-dotnet build -c Release && mkdir -p "$HOME/Documents/My Games/Kitten Space Agency/mods/KSA-Spacenavd" && cp KSA-Spacenavd/bin/Release/net10.0/{KSA-Spacenavd.dll,KSA-Spacenavd.deps.json,mod.toml} "$HOME/Documents/My Games/Kitten Space Agency/mods/KSA-Spacenavd/" && sed -i '/id = "KSA-Spacenavd"/q; $a [[mods]]\nid = "KSA-Spacenavd"\nenabled = true' "$HOME/Documents/My Games/Kitten Space Agency/manifest.toml"
+dotnet build -c Release && mkdir -p "$HOME/Documents/My Games/Kitten Space Agency/mods/KSA-Spacenavd" && cp KSA-Spacenavd/bin/Release/net10.0/{KSA-Spacenavd.dll,KSA-Spacenavd.deps.json,mod.toml} "$HOME/Documents/My Games/Kitten Space Agency/mods/KSA-Spacenavd/" && sed -i '/id = "KSA-Spacenavd"/q; $a [[mods]]\nid = "KSA-Spacenavd"\nenabled = true' "$HOME/Documents/My Games/Kitten Space Agency/manifest.toml" && for d in "$HOME/.local/share/Borea/Instances/"*/mods/KSA-Spacenavd; do [ -d "$d" ] && cp KSA-Spacenavd/bin/Release/net10.0/{KSA-Spacenavd.dll,KSA-Spacenavd.deps.json,mod.toml} "$d/"; done
 ```

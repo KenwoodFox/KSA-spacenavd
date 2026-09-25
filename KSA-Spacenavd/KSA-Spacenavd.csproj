@@ -13,14 +13,15 @@
     <KsaDir>$([System.IO.Path]::GetDirectoryName($(KsaDll)))</KsaDir>
     <StarMapVersion>0.4.7</StarMapVersion>
     <StarMapApiDll>$(MSBuildThisFileDirectory)deps/StarMap.API.dll</StarMapApiDll>
+    <HarmonyDll>$(MSBuildThisFileDirectory)deps/0Harmony.dll</HarmonyDll>
   </PropertyGroup>
 
   <Target Name="FetchStarMapApi" BeforeTargets="ResolveAssemblyReferences">
     <Error Condition="!Exists('$(KsaDll)')" Text="KSA.dll not found at $(KsaDll). Pass -p:KsaDll=/path/to/KSA.dll" />
-    <MakeDir Directories="$(MSBuildThisFileDirectory)deps" Condition="!Exists('$(StarMapApiDll)')" />
+    <MakeDir Directories="$(MSBuildThisFileDirectory)deps" Condition="!Exists('$(MSBuildThisFileDirectory)deps')" />
     <Exec
-      Condition="!Exists('$(StarMapApiDll)')"
-      Command="curl -fsSL -o &quot;$(MSBuildThisFileDirectory)deps/StarMap.zip&quot; -L &quot;https://github.com/StarMapLoader/StarMap/releases/download/$(StarMapVersion)/StarMap-$(StarMapVersion).zip&quot; &amp;&amp; unzip -jo &quot;$(MSBuildThisFileDirectory)deps/StarMap.zip&quot; StarMap.API.dll -d &quot;$(MSBuildThisFileDirectory)deps&quot; &amp;&amp; rm -f &quot;$(MSBuildThisFileDirectory)deps/StarMap.zip&quot;" />
+      Condition="!Exists('$(StarMapApiDll)') or !Exists('$(HarmonyDll)')"
+      Command="curl -fsSL -o &quot;$(MSBuildThisFileDirectory)deps/StarMap.zip&quot; -L &quot;https://github.com/StarMapLoader/StarMap/releases/download/$(StarMapVersion)/StarMap-$(StarMapVersion).zip&quot; &amp;&amp; unzip -jo &quot;$(MSBuildThisFileDirectory)deps/StarMap.zip&quot; StarMap.API.dll 0Harmony.dll -d &quot;$(MSBuildThisFileDirectory)deps&quot; &amp;&amp; rm -f &quot;$(MSBuildThisFileDirectory)deps/StarMap.zip&quot;" />
   </Target>
 
   <ItemGroup>
@@ -28,6 +29,9 @@
       <Private>false</Private>
     </Reference>
     <Reference Include="$(StarMapApiDll)">
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="$(HarmonyDll)">
       <Private>false</Private>
     </Reference>
     <Reference Include="$(KsaDir)/Brutal.ImGui.dll">
