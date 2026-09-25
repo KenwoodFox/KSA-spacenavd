@@ -12,9 +12,10 @@ namespace KSA.Spacenavd;
 public sealed class SpacenavMod
 {
     internal static bool ShowWindow;
+    internal static int Deadband = 180;
 
     private Harmony? _harmony;
-    private SpacenavClient? _client;
+    private static SpacenavClient? _client;
 
     [StarMapBeforeMain]
     public void OnBeforeMain()
@@ -33,7 +34,7 @@ public sealed class SpacenavMod
             return;
 
         var pos = new float2(80, 80);
-        var size = new float2(420, 160);
+        var size = new float2(420, 200);
         ImGui.SetNextWindowViewport(ImGui.GetMainViewport().ID);
         ImGui.SetNextWindowPos(in pos, ImGuiCond.FirstUseEver);
         ImGui.SetNextWindowSize(in size, ImGuiCond.FirstUseEver);
@@ -43,6 +44,8 @@ public sealed class SpacenavMod
             return;
         }
 
+        ImGui.SliderInt("Deadband"u8, ref Deadband, 0, 250);
+
         var state = _client?.Snapshot();
         if (state is null)
         {
@@ -50,10 +53,11 @@ public sealed class SpacenavMod
         }
         else
         {
+            var flags = ToThrusterFlags(state.Value, Deadband);
             ImGui.Text(state.Value.Status);
             ImGui.Text($"T  {state.Value.Tx}  {state.Value.Ty}  {state.Value.Tz}");
             ImGui.Text($"R  {state.Value.Rx}  {state.Value.Ry}  {state.Value.Rz}");
-            ImGui.Text($"button  {state.Value.Button}");
+            ImGui.Text($"RCS  {flags}");
         }
 
         ImGui.End();
@@ -66,6 +70,51 @@ public sealed class SpacenavMod
         _harmony = null;
         _client?.Stop();
         _client = null;
+    }
+
+    internal static ThrusterMapFlags CurrentFlags()
+    {
+        var state = _client?.Snapshot();
+        return state is null ? ThrusterMapFlags.None : ToThrusterFlags(state.Value, Deadband);
+    }
+
+    // spacenavd is Y-up, +Z toward the user. KSA RCS is flag-only (same as keyboard).
+    internal static ThrusterMapFlags ToThrusterFlags(SpacenavClient.DebugState state, int deadband)
+    {
+        var flags = ThrusterMapFlags.None;
+        if (state.Tx > deadband) flags |= ThrusterMapFlags.TranslateRight;
+        if (state.Tx < -deadband) flags |= ThrusterMapFlags.TranslateLeft;
+        if (state.Ty > deadband) flags |= ThrusterMapFlags.TranslateUp;
+        if (state.Ty < -deadband) flags |= ThrusterMapFlags.TranslateDown;
+        if (state.Tz > deadband) flags |= ThrusterMapFlags.TranslateForward;
+        if (state.Tz < -deadband) flags |= ThrusterMapFlags.TranslateBackward;
+        if (state.Rx > deadband) flags |= ThrusterMapFlags.PitchUp;
+        if (state.Rx < -deadband) flags |= ThrusterMapFlags.PitchDown;
+        if (state.Ry > deadband) flags |= ThrusterMapFlags.YawLeft;
+        if (state.Ry < -deadband) flags |= ThrusterMapFlags.YawRight;
+        if (state.Rz > deadband) flags |= ThrusterMapFlags.RollRight;
+        if (state.Rz < -deadband) flags |= ThrusterMapFlags.RollLeft;
+        return flags;
+    }
+}
+
+[HarmonyPatch(typeof(VehicleUpdateState), nameof(VehicleUpdateState.PrepareFromVehicle))]
+internal static class PrepareFromVehiclePatch
+{
+    private static void Postfix(VehicleUpdateState __instance)
+    {
+        if (!__instance.IsControlled || Program.IsEditorOpen)
+            return;
+        if (Universe.GetSimulationSpeed() > 30.0)
+            return;
+
+        var flags = SpacenavMod.CurrentFlags();
+        if (flags == ThrusterMapFlags.None)
+            return;
+
+        var inputs = __instance.ManualControlInputs;
+        inputs.ThrusterCommandFlags |= flags;
+        __instance.ManualControlInputs = inputs;
     }
 }
 

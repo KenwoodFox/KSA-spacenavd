@@ -7,6 +7,7 @@ internal sealed class SpacenavClient
 {
     private const string SocketPath = "/var/run/spnav.sock";
     private const int EventSize = 32;
+    private static readonly TimeSpan ReconnectDelay = TimeSpan.FromSeconds(1);
 
     private readonly object _gate = new();
     private readonly Thread _thread;
@@ -64,62 +65,91 @@ internal sealed class SpacenavClient
 
     private void Run()
     {
-        try
+        while (_running)
         {
-            using var sock = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-            _socket = sock;
-            sock.Connect(new UnixDomainSocketEndPoint(SocketPath));
-            SetStatus($"connected to {SocketPath}");
-
-            var buf = new byte[EventSize];
-            while (_running)
+            try
             {
-                int n = 0;
-                while (n < EventSize)
-                {
-                    int read = sock.Receive(buf, n, EventSize - n, SocketFlags.None);
-                    if (read == 0)
-                    {
-                        SetStatus("socket closed");
-                        return;
-                    }
+                using var sock = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                _socket = sock;
+                sock.Connect(new UnixDomainSocketEndPoint(SocketPath));
+                SetStatus($"connected to {SocketPath}");
+                ReadEvents(sock);
+            }
+            catch (Exception) when (!_running)
+            {
+                SetStatus("stopped");
+                return;
+            }
+            catch (Exception ex)
+            {
+                SetStatus($"{ex.Message}, retrying");
+                ClearMotion();
+            }
+            finally
+            {
+                _socket = null;
+            }
 
-                    n += read;
+            WaitForRetry();
+        }
+    }
+
+    private void ReadEvents(Socket sock)
+    {
+        var buf = new byte[EventSize];
+        while (_running)
+        {
+            int n = 0;
+            while (n < EventSize)
+            {
+                int read = sock.Receive(buf, n, EventSize - n, SocketFlags.None);
+                if (read == 0)
+                {
+                    SetStatus("socket closed, retrying");
+                    ClearMotion();
+                    return;
                 }
 
-                var ev = MemoryMarshal.Cast<byte, int>(buf);
-                lock (_gate)
+                n += read;
+            }
+
+            var ev = MemoryMarshal.Cast<byte, int>(buf);
+            lock (_gate)
+            {
+                if (ev[0] == 0)
                 {
-                    if (ev[0] == 0)
+                    _state = _state with
                     {
-                        _state = _state with
-                        {
-                            Tx = ev[1],
-                            Ty = ev[2],
-                            Tz = ev[3],
-                            Rx = ev[4],
-                            Ry = ev[5],
-                            Rz = ev[6],
-                        };
-                    }
-                    else
+                        Tx = ev[1],
+                        Ty = ev[2],
+                        Tz = ev[3],
+                        Rx = ev[4],
+                        Ry = ev[5],
+                        Rz = ev[6],
+                    };
+                }
+                else
+                {
+                    _state = _state with
                     {
-                        _state = _state with
-                        {
-                            Button = $"{ev[1]} {(ev[0] == 1 ? "pressed" : "released")}",
-                        };
-                    }
+                        Button = $"{ev[1]} {(ev[0] == 1 ? "pressed" : "released")}",
+                    };
                 }
             }
         }
-        catch (Exception ex) when (!_running)
-        {
-            SetStatus($"stopped ({ex.GetType().Name})");
-        }
-        catch (Exception ex)
-        {
-            SetStatus(ex.Message);
-        }
+    }
+
+    private void WaitForRetry()
+    {
+        var until = DateTime.UtcNow + ReconnectDelay;
+        while (_running && DateTime.UtcNow < until)
+            Thread.Sleep(50);
+    }
+
+    private void ClearMotion()
+    {
+        lock (_gate)
+            _state = _state with { Tx = 0, Ty = 0, Tz = 0, Rx = 0, Ry = 0, Rz = 0 };
     }
 
     private void SetStatus(string status)
